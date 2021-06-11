@@ -42,6 +42,7 @@ func New(client kubernetes.Interface, onChange func(*Payload)) *Watcher {
 
 // 运行watcher
 func (w *Watcher) Run(ctx context.Context) error {
+	// 每分钟去list一下
 	factory := informers.NewSharedInformerFactory(w.client, time.Minute)
 	secretLister := factory.Core().V1().Secrets().Lister()
 	serviceLister := factory.Core().V1().Services().Lister()
@@ -80,10 +81,11 @@ func (w *Watcher) Run(ctx context.Context) error {
 			klog.Errorf("[ingress] failed to list ingresses")
 			return
 		}
-		klog.Infof("ingress list : %v", ingresses)
+		//klog.Infof("ingress list : %v", ingresses)
 
 		for _, ingress := range ingresses {
 			// 构造 IngressPayload 结构
+			klog.Infof("Ingress is : %v", ingress)
 			ingressPayload := IngressPayload{
 				Ingress:      ingress,
 				ServicePorts: make(map[string]map[string]int),
@@ -100,6 +102,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 			//    servicePort: 80
 			if ingress.Spec.Backend != nil {
 				// 给 ingressPayload 组装数据
+				klog.Infof("准备开始组装数据")
 				addBackend(&ingressPayload, *ingress.Spec.Backend)
 			}
 			//apiVersion: extensions/v1beta1

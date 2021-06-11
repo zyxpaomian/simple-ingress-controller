@@ -47,6 +47,8 @@ func (w *Watcher) Run(ctx context.Context) error {
 	serviceLister := factory.Core().V1().Services().Lister()
 	ingressLister := factory.Extensions().V1beta1().Ingresses().Lister()
 
+
+
 	// 初次加载，加载所有的service 对象，只查询该ingress所在的namespace的service
 	addBackend := func(ingressPayload *IngressPayload, backend extensionsv1beta1.IngressBackend) {
 		// 通过 Ingress 所在的 namespace 和 ServiceName 获取 Service 对象
@@ -54,6 +56,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 		if err != nil {
 			klog.Errorf("[ingress] get service list failed")
 		} else {
+			klog.Infof("[ingress] 当前namespace下有以下service: %v", svc)
 			// Service 端口映射
 			m := make(map[string]int)
 			for _, port := range svc.Spec.Ports {

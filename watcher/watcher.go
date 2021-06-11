@@ -47,6 +47,8 @@ func (w *Watcher) Run(ctx context.Context) error {
 	serviceLister := factory.Core().V1().Services().Lister()
 	ingressLister := factory.Extensions().V1beta1().Ingresses().Lister()
 
+	svcname, _ := serviceLister.Services("default").Get("whoami")
+	klog.Infof("service: %v", svcname)
 
 
 	// 初次加载，加载所有的service 对象，只查询该ingress所在的namespace的service
@@ -78,6 +80,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 			klog.Errorf("[ingress] failed to list ingresses")
 			return
 		}
+		klog.Infof("ingress list : %v", ingresses)
 
 		for _, ingress := range ingresses {
 			// 构造 IngressPayload 结构

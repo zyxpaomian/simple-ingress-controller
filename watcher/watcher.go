@@ -83,10 +83,16 @@ func (w *Watcher) Run(ctx context.Context) error {
 		for _, ingress := range ingresses {
 			// 构造 IngressPayload 结构
 			klog.Infof("Ingress is : %v", ingress)
+			klog.Infof("Ingress Backend is : %v", ingress.Spec.Backend)
 			klog.Infof("Ingress Type is : %T", ingress)
 			klog.Infof("Ingress spec is : %v", ingress.Spec)
 			klog.Infof("Ingress rules is : %v", ingress.Spec.Rules)
 			klog.Infof("Ingress RuleValue is : %v", ingress.Spec.Rules[0])
+
+			for _, i := range ingress.Spec.Rules{
+				klog.Infof("Ingress host is :%v", i.Host)
+				klog.Infof("Ingress path is :%v", i.IngressRuleValue.HTTP.Paths)
+			}
 			ingressPayload := IngressPayload{
 				Ingress:      ingress,
 				ServicePorts: make(map[string]map[string]int),

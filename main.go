@@ -1,13 +1,13 @@
 package main
 
 import (
-	"math/rand"
-	"k8s.io/klog"	
-	"time"
+	"context"
 	"flag"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog"
+	"math/rand"
 	"runtime"
-	"context"
+	"time"
 	//"ingress_controller/server"
 	"simple-ingress-controller/watcher"
 
@@ -29,12 +29,11 @@ func main() {
 	// http proxy server
 	//s := server.NewServer(80)
 
-
 	// 从集群内的token和ca.crt获取 Config
 	config, err := rest.InClusterConfig()
 	// 由于我们要通过集群内部的 Service 进行服务的访问，所以不能在集群外部使用，所以不能使用 kubeconfig 的方式来获取 Config
 	if err != nil {
-		klog.Errorf("[ingress] 获取kubernetes 配置失败" )
+		klog.Errorf("[ingress] 获取kubernetes 配置失败")
 	}
 
 	// 从 Config 中创建一个新的 Clientset
@@ -54,6 +53,5 @@ func main() {
 	if err := eg.Wait(); err != nil {
 		klog.Fatalf("[ingress] something is wrong: %v", err.Error())
 	}
-
 
 }

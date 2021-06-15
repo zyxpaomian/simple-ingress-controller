@@ -3,15 +3,16 @@ package watcher
 import (
 	"context"
 	"crypto/tls"
-	"sync"
-	"time"
+	"fmt"
 	"github.com/bep/debounce"
-	"k8s.io/klog"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
+	"sync"
+	"time"
 )
 
 // 整体的payload，用于将证书和ingress列表做关联
@@ -22,8 +23,13 @@ type Payload struct {
 
 // ingress payload, 记录了ingress本体以及他映射的端口
 type IngressPayload struct {
-	Ingress      *extensionsv1beta1.Ingress
-	ServicePorts map[string]map[string]int
+	Ingress *extensionsv1beta1.Ingress
+	Host    string
+	Path    string
+	SvcName string
+	SvcPort int
+	// ServicePorts map[string][]int
+	//ServicePorts map[string]map[string]int
 }
 
 // watcher的struct, 包含了客户端以及onChange函数，用于监听变化
@@ -48,24 +54,34 @@ func (w *Watcher) Run(ctx context.Context) error {
 	serviceLister := factory.Core().V1().Services().Lister()
 	ingressLister := factory.Extensions().V1beta1().Ingresses().Lister()
 
-
 	// 初次加载，加载所有的service 对象，只查询该ingress所在的namespace的service
 	// 测试使用1.20的k8s, 通过ingressbackend 无法取值， 后续验证下其他版本
-	// addBackend := func(ingressPayload *IngressPayload, backend extensionsv1beta1.IngressBackend) {
-	addBackend := func(ingressPayload *IngressPayload, backend extensionsv1beta1.IngressBackend) {
-		// 通过 Ingress 所在的 namespace 和 ServiceName 获取 Service 对象
+	addBackend := func(ingressPayload *IngressPayload, host string, path string, backend extensionsv1beta1.IngressBackend) {
+		// 通过 Ingress 所在的 namespace 和 Backend 对应的servicename 查询对应的service
 		svc, err := serviceLister.Services(ingressPayload.Ingress.Namespace).Get(backend.ServiceName)
 		if err != nil {
-			klog.Errorf("[ingress] get service list failed")
+			klog.Errorf("[ingress] 获取service 失败")
 		} else {
 			klog.Infof("[ingress] 当前namespace下有以下service: %v", svc)
+
 			// Service 端口映射
-			m := make(map[string]int)
+			// m := make(map[string]int)
 			for _, port := range svc.Spec.Ports {
-				m[port.Name] = int(port.Port)
-				klog.Infof("[ingress] port name is %v", port.Name)
+				if int(port.Port) == backend.ServicePort.IntValue() {
+					ingressPayload.Host = host
+					ingressPayload.Path = path
+					ingressPayload.SvcName = backend.ServiceName
+					ingressPayload.SvcPort = backend.ServicePort.IntValue()
+					klog.Infof("[ingress] 后端service 更新完成，%v", ingressPayload)
+				}
+				// if ingressPayload.Ingress
+
+				//portName := fmt.Sprintf("%v-%v",svc.Name, port.Name)
+				//m[portName] = int(port.Port)
+				//klog.Infof("[ingress] port name is %v", port.Name)
+				//ingressPayload.ServicePorts[svc.Name] = append(ingressPayload.ServicePorts[svc.Name], int(port.Port))
 			}
-			ingressPayload.ServicePorts[svc.Name] = m
+			// ingressPayload.ServicePorts[svc.Name] = m
 			// {whoami: {httpport: 80, httpsport: 443}}
 		}
 	}
@@ -85,60 +101,26 @@ func (w *Watcher) Run(ctx context.Context) error {
 
 		for _, ingress := range ingresses {
 			// 构造 IngressPayload 结构
-			klog.Infof("Ingress is : %v", ingress)
+			/*klog.Infof("Ingress is : %v", ingress)
 			klog.Infof("Ingress Backend is : %v", ingress.Spec.Backend)
 			klog.Infof("Ingress Type is : %T", ingress)
 			klog.Infof("Ingress spec is : %v", ingress.Spec)
 			klog.Infof("Ingress rules is : %v", ingress.Spec.Rules)
-			klog.Infof("Ingress RuleValue is : %v", ingress.Spec.Rules[0])
-
+			klog.Infof("Ingress RuleValue is : %v", ingress.Spec.Rules[0])*/
 
 			ingressPayload := IngressPayload{
-				Ingress:      ingress,
-				ServicePorts: make(map[string]map[string]int),
+				Ingress: ingress,
 			}
 			payload.Ingresses = append(payload.Ingresses, ingressPayload)
 
-			//apiVersion: extensions/v1beta1
-			//kind: Ingress
-			//metadata:
-			//  name: test-ingress
-			//spec:
-			//  backend:
-			//    serviceName: testsvc
-			//    servicePort: 80
-			if len(ingress.Spec.Rules) != 0 {
-				// 给 ingressPayload 组装数据
-				klog.Infof("准备开始组装数据")
-				for _, i := range ingress.Spec.Rules{
-					klog.Infof("Ingress host is :%v", i.Host)
-					klog.Infof("Ingress path is :%v", i)
-					for _, j := range i.IngressRuleValue.HTTP.Paths{
-						addBackend(&ingressPayload, j.Backend)
-					}
-					//addBackend(&ingressPayload, *ingress.Spec.Backend)
-				}
-				
-			}
-			//apiVersion: extensions/v1beta1
-			//kind: Ingress
-			//metadata:
-			//  name: test
-			//spec:
-			//  rules:
-			//  - host: foo.bar.com
-			//    http:
-			//      paths:
-			//      - backend:
-			//          serviceName: s1
-			//          servicePort: 80
 			for _, rule := range ingress.Spec.Rules {
+				klog.Infof("准备开始组装数据")
 				if rule.HTTP != nil {
 					continue
 				}
 				for _, path := range rule.HTTP.Paths {
 					// 给 ingressPayload 组装数据
-					addBackend(&ingressPayload, path.Backend)
+					addBackend(&ingressPayload, rule.Host, path.Path, path.Backend)
 				}
 			}
 

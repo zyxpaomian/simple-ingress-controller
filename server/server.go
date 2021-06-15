@@ -5,40 +5,42 @@ import (
 	"net/http"
 	//"net/url"
 	"net/http/httputil"
-	"ingress_controller/server/route"
+	"simple-ingress-controller/server/route"
+	"simple-ingress-controller/watcher"
 	//"github.com/docker/docker/api/types/backend"
+	"context"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 )
 
 // server 结构体
 type Server struct {
-	port int
+	port          int
 	routingTables *route.RoutingTable
-	ready *Event
+	ready         *Event
 }
 
 // New 创建一个新的服务器
 func NewServer(port int) *Server {
-	// 先等待路由表初始化	
+	// 先等待路由表初始化
 	rtb := route.NewRoutingTable()
 
 	s := &Server{
-		port: port,
-		routingTables:  rtb,
-		ready: NewEvent(),
+		port:          port,
+		routingTables: rtb,
+		ready:         NewEvent(),
 	}
 	// s.routingTable.Store(NewRoutingTable(nil))
 	return s
 }
 
 // func (s *Server) Run(ctx context.Context) error {
-func (s *Server) Run() error {
+func (s *Server) Run(ctx context.Context) error {
 	// 直到第一个 payload 数据后才开始监听
-	// s.ready.Wait(ctx)
+	s.ready.Wait(ctx)
 
 	var eg errgroup.Group
-	// 启动http server 
+	// 启动http server
 	eg.Go(func() error {
 		srv := http.Server{
 			Addr:    fmt.Sprintf(":%d", s.port),
@@ -84,4 +86,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// p.ErrorLog = stdlog.New(log.Logger, "", 0)
 	p.ServeHTTP(w, r)
 	// klog.Info(w)
+}
+
+// Update 更新路由表根据新的 Ingress 规则
+func (s *Server) Update(payload *watcher.Payload) {
+	s.routingTable.Store(NewRoutingTable(payload))
+	s.ready.Set()
 }

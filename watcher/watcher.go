@@ -86,6 +86,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 			klog.Infof("Ingress Type is : %T", ingress)
 			klog.Infof("Ingress spec is : %v", ingress.Spec)
 			klog.Infof("Ingress rules is : %v", ingress.Spec.Rules)
+			klog.Infof("Ingress RuleValue is : %v", ingress.Spec.Rules[0])
 			ingressPayload := IngressPayload{
 				Ingress:      ingress,
 				ServicePorts: make(map[string]map[string]int),

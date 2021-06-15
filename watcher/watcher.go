@@ -50,6 +50,8 @@ func (w *Watcher) Run(ctx context.Context) error {
 
 
 	// 初次加载，加载所有的service 对象，只查询该ingress所在的namespace的service
+	// 测试使用1.20的k8s, 通过ingressbackend 无法取值， 后续验证下其他版本
+	// addBackend := func(ingressPayload *IngressPayload, backend extensionsv1beta1.IngressBackend) {
 	addBackend := func(ingressPayload *IngressPayload, backend extensionsv1beta1.IngressBackend) {
 		// 通过 Ingress 所在的 namespace 和 ServiceName 获取 Service 对象
 		svc, err := serviceLister.Services(ingressPayload.Ingress.Namespace).Get(backend.ServiceName)
@@ -63,7 +65,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 				m[port.Name] = int(port.Port)
 			}
 			ingressPayload.ServicePorts[svc.Name] = m
-			// {svcname: {httpport: 80, httpsport: 443}}
+			// {whoami: {httpport: 80, httpsport: 443}}
 		}
 	}
 
@@ -89,10 +91,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 			klog.Infof("Ingress rules is : %v", ingress.Spec.Rules)
 			klog.Infof("Ingress RuleValue is : %v", ingress.Spec.Rules[0])
 
-			for _, i := range ingress.Spec.Rules{
-				klog.Infof("Ingress host is :%v", i.Host)
-				klog.Infof("Ingress path is :%v", i.IngressRuleValue.HTTP.Paths)
-			}
+
 			ingressPayload := IngressPayload{
 				Ingress:      ingress,
 				ServicePorts: make(map[string]map[string]int),
@@ -107,10 +106,18 @@ func (w *Watcher) Run(ctx context.Context) error {
 			//  backend:
 			//    serviceName: testsvc
 			//    servicePort: 80
-			if ingress.Spec.Backend != nil {
+			if len(ingress.Spec.Rules) != 0 {
 				// 给 ingressPayload 组装数据
 				klog.Infof("准备开始组装数据")
-				addBackend(&ingressPayload, *ingress.Spec.Backend)
+				for _, i := range ingress.Spec.Rules{
+					klog.Infof("Ingress host is :%v", i.Host)
+					klog.Infof("Ingress path is :%v", i)
+					for _, j := range i.IngressRuleValue.HTTP.Paths{
+						addBackend(&ingressPayload, j.Backend)
+					}
+					//addBackend(&ingressPayload, *ingress.Spec.Backend)
+				}
+				
 			}
 			//apiVersion: extensions/v1beta1
 			//kind: Ingress

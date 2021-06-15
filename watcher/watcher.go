@@ -63,6 +63,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 			m := make(map[string]int)
 			for _, port := range svc.Spec.Ports {
 				m[port.Name] = int(port.Port)
+				klog.Infof("[ingress] port name is %v", port.Name)
 			}
 			ingressPayload.ServicePorts[svc.Name] = m
 			// {whoami: {httpport: 80, httpsport: 443}}

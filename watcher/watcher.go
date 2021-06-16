@@ -72,7 +72,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 					ingressPayload.Path = path
 					ingressPayload.SvcName = backend.ServiceName
 					ingressPayload.SvcPort = backend.ServicePort.IntValue()
-					klog.Infof("[ingress] 后端service 更新完成，%v", ingressPayload)
+					klog.Infof("[ingress] 后端service 更新完成，Host: %v, Path: %v, ServiceName: %v, ServicePort: %v", ingressPayload.Host, ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 				}
 				// if ingressPayload.Ingress
 

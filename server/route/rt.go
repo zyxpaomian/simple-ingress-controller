@@ -25,20 +25,23 @@ func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
 		Lock: &sync.RWMutex{},
 	}
 	// 第一次加载数据
-	rt.Update(payload)
+	rt.init(payload)
 	
 	return rt
 }
 
-func (rt *RoutingTable) Update(payload *watcher.Payload) {
+func (rt *RoutingTable) init(payload *watcher.Payload) {
 	if payload == nil {
 		return
-	} 
+	}
+	rt.Lock.Lock()
 	for _, ingressPayload := range payload.Ingresses {
 		rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 		rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)
 		klog.Infof("[ingress] add ingress for host: %v info: %v", ingressPayload.Host, rtb)
 	}
+	rt.Lock.Unlock()
+
 }
 
 

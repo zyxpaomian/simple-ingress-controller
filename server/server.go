@@ -74,9 +74,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新路由表根据新的 Ingress 规则
 func (s *Server) Update(payload *watcher.Payload) {
-	s.routingTables.Lock.Lock()
-	s.routingTables.Update(payload)
-	s.routingTables.Lock.Unlock()
+	//s.routingTables.Lock.Lock()
+	s.routingTables = route.NewRoutingTable(payload)
+	// s.NewRoutingTable(payload)
+	//s.routingTables.Lock.Unlock()
 	s.ready.Set()
 }
 

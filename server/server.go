@@ -57,6 +57,7 @@ func (s *Server) Run(ctx context.Context) error {
 // 实际的代理服务功能
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 获取后端的真实服务地址
+	klog.Infof("[ingress] get request for %s%s", r.Host, r.URL.Path)
 	backendURL, err := s.routingTables.GetBackend(r.Host, r.URL.Path)
 	if err != nil {
 		http.Error(w, "upstream server not found", http.StatusNotFound)

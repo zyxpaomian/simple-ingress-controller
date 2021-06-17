@@ -47,9 +47,9 @@ func main() {
 
 	// 多协程启动
 	var eg errgroup.Group
-	/*eg.Go(func() error {
+	eg.Go(func() error {
 		return s.Run(context.TODO())
-	})*/
+	})
 	eg.Go(func() error {
 		return w.Run(context.TODO())
 	})

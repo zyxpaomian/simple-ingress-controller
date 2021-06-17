@@ -30,7 +30,9 @@ func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
 }
 
 func (rt *RoutingTable) Update(payload *watcher.Payload) {
-	// var 
+	if payload == nil {
+		return
+	} 
 	for _, ingressPayload := range payload.Ingresses {
 		rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 		rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)

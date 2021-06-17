@@ -10,7 +10,6 @@ import (
 	"time"
 	//"simple-ingress-controller/server"
 	"simple-ingress-controller/watcher"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -44,7 +43,7 @@ func main() {
 
 	// watcher service
 	// w := watcher.New(client, func(payload *watcher.Payload) {s.Update(payload)})
-	w := watcher.New(client, func(payload *watcher.Payload){})
+	w := watcher.New(client, func(payload *watcher.Payload){klog.Infof("current payload is %v", payload)})
 
 	// 多协程启动
 	var eg errgroup.Group

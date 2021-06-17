@@ -45,8 +45,8 @@ func New(client kubernetes.Interface, onChange func(*Payload)) *Watcher {
 
 // 运行watcher
 func (w *Watcher) Run(ctx context.Context) error {
-	// 每分钟去list一下
-	factory := informers.NewSharedInformerFactory(w.client, time.Minute)
+	// 每10分钟去list一下
+	factory := informers.NewSharedInformerFactory(w.client, 10 * time.Minute)
 	secretLister := factory.Core().V1().Secrets().Lister()
 	serviceLister := factory.Core().V1().Services().Lister()
 	ingressLister := factory.Extensions().V1beta1().Ingresses().Lister()
@@ -59,10 +59,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 		if err != nil {
 			klog.Errorf("[ingress] 获取service 失败")
 		} else {
-			klog.Infof("[ingress] 当前namespace下有以下service: %v", svc)
-
-			// Service 端口映射
-			// m := make(map[string]int)
+			// 进行匹配，预防service 有 而 ingress 没有
 			for _, port := range svc.Spec.Ports {
 				if int(port.Port) == backend.ServicePort.IntValue() {
 					ingressPayload.Host = host
@@ -71,15 +68,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 					ingressPayload.SvcPort = backend.ServicePort.IntValue()
 					klog.Infof("[ingress] 后端service 更新完成，Host: %v, Path: %v, ServiceName: %v, ServicePort: %v", ingressPayload.Host, ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 				}
-				// if ingressPayload.Ingress
-
-				//portName := fmt.Sprintf("%v-%v",svc.Name, port.Name)
-				//m[portName] = int(port.Port)
-				//klog.Infof("[ingress] port name is %v", port.Name)
-				//ingressPayload.ServicePorts[svc.Name] = append(ingressPayload.ServicePorts[svc.Name], int(port.Port))
 			}
-			// ingressPayload.ServicePorts[svc.Name] = m
-			// {whoami: {httpport: 80, httpsport: 443}}
 		}
 	}
 
@@ -94,17 +83,8 @@ func (w *Watcher) Run(ctx context.Context) error {
 			klog.Errorf("[ingress] failed to list ingresses")
 			return
 		}
-		//klog.Infof("ingress list : %v", ingresses)
 
 		for _, ingress := range ingresses {
-			// 构造 IngressPayload 结构
-			/*klog.Infof("Ingress is : %v", ingress)
-			klog.Infof("Ingress Backend is : %v", ingress.Spec.Backend)
-			klog.Infof("Ingress Type is : %T", ingress)
-			klog.Infof("Ingress spec is : %v", ingress.Spec)
-			klog.Infof("Ingress rules is : %v", ingress.Spec.Rules)
-			klog.Infof("Ingress RuleValue is : %v", ingress.Spec.Rules[0])*/
-
 			ingressPayload := IngressPayload{
 				Ingress: ingress,
 			}

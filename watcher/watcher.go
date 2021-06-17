@@ -28,8 +28,6 @@ type IngressPayload struct {
 	Path    string
 	SvcName string
 	SvcPort int
-	// ServicePorts map[string][]int
-	//ServicePorts map[string]map[string]int
 }
 
 // watcher的struct, 包含了客户端以及onChange函数，用于监听变化

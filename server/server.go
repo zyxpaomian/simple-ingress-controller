@@ -22,19 +22,17 @@ type Server struct {
 
 // New 创建一个新的服务器
 func NewServer(port int) *Server {
-	// 先等待路由表初始化
-	rtb := route.NewRoutingTable()
+	// 先等待路由表初始化, 第一次初始化为空
+	rtb := route.NewRoutingTable(nil)
 
 	s := &Server{
 		port:          port,
 		routingTables: rtb,
 		ready:         NewEvent(),
 	}
-	// s.routingTable.Store(NewRoutingTable(nil))
 	return s
 }
 
-// func (s *Server) Run(ctx context.Context) error {
 func (s *Server) Run(ctx context.Context) error {
 	// 直到第一个 payload 数据后才开始监听
 	s.ready.Wait(ctx)
@@ -65,31 +63,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	klog.Infof("backend url is %v", backendURL)
-	/* backendURL, err := s.routingTable.Load().(*RoutingTable).GetBackend(r.Host, r.URL.Path)
-	if err != nil {
-		http.Error(w, "upstream server not found", http.StatusNotFound)
-		return
-	}
-	*/
-
-	//backendURL, _ := url.Parse("zyx.test.com:80")
-
-	/*var backendURL *url.URL
-	backendURL = new(url.URL)
-	backendURL.Scheme = "http"
-	backendURL.Host = "zyx.test.com:8080"
-	backendURL.Path = "v1/api/user/getalluser"*/
 
 	klog.Infof("[ingress] get proxy request from: %s%s", r.Host, r.URL.Path)
 	// 使用 NewSingleHostReverseProxy 进行代理请求
 	p := httputil.NewSingleHostReverseProxy(backendURL)
 	// p.ErrorLog = stdlog.New(log.Logger, "", 0)
 	p.ServeHTTP(w, r)
-	// klog.Info(w)
 }
 
 // Update 更新路由表根据新的 Ingress 规则
 func (s *Server) Update(payload *watcher.Payload) {
-	s.routingTable.Store(NewRoutingTable(payload))
+	s.routingTables.Lock.Lock()
+	s.routingTables.Update(payload)
+	s.routingTables.Lock.Unlock()
 	s.ready.Set()
 }
+

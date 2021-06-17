@@ -27,6 +27,7 @@ func (e *Event) Set() {
 
 // Wait waits for the event to get set.
 func (e *Event) Wait(ctx context.Context) {
+	// 只有在执行set的时候，才会出发channel的关闭，从而推出wait方法
 	select {
 	case <-ctx.Done():
 	case <-e.C:

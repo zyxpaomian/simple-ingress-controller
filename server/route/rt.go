@@ -5,6 +5,7 @@ import (
 	"net/url"
 	//	"regexp"
 	"fmt"
+	"sync"
 	"simple-ingress-controller/watcher"
 )
 
@@ -12,6 +13,7 @@ import (
 type RoutingTable struct {
 	// CertByHost *tls.Certificate
 	Backends map[string][]routingTableBackend
+	Lock *sync.RWMutex
 }
 
 // 初始化一个新的路由表
@@ -19,28 +21,22 @@ func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
 	rt := &RoutingTable{
 		//certificatesByHost: make(map[string]map[string]*tls.Certificate),
 		Backends: make(map[string][]routingTableBackend),
+		Lock: &sync.RWMutex{},
 	}
-	for _, ingressPayload := range payload.Ingresses {
-		rtb, _ := newroutingTableBackend("hello", ingressPayload, 12345)
-
-	}
-	rtb, _ := newroutingTableBackend("hello", "127.0.0.1", 12345)
-	rt.Backends["www.zyx.com"] = append(rt.Backends["www.zyx.com"], rtb)
-
-	//rt.init(payload)
+	// 第一次加载数据
+	rt.Update(payload)
+	
 	return rt
 }
 
-// 初始化路由表
-func (rt *RoutingTable) init(payload *watcher.Payload) {
-	if payload == nil {
-		return
-	}
-	// 根据 payload 数据重新初始化 路由表
-	for _, ingressPayload := range payload.Ingresses { // 循环所有的 IngressPayload
-
+func (rt *RoutingTable) Update(payload *watcher.Payload) {
+	for _, ingressPayload := range payload.Ingresses {
+		rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
+		rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)
 	}
 }
+
+
 
 // 根据访问的host 以及 path 获取真实的backend地址
 func (rt *RoutingTable) GetBackend(host, path string) (*url.URL, error) {

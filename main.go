@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"runtime"
 	"time"
-	//"ingress_controller/server"
+	"simple-ingress-controller/server"
 	"simple-ingress-controller/watcher"
 
 	"k8s.io/client-go/kubernetes"
@@ -26,9 +26,6 @@ func main() {
 	flag.IntVar(&tlsPort, "tls-port", 443, "https server port")
 	flag.Parse()
 
-	// http proxy server
-	//s := server.NewServer(80)
-
 	// 从集群内的token和ca.crt获取 Config
 	config, err := rest.InClusterConfig()
 	// 由于我们要通过集群内部的 Service 进行服务的访问，所以不能在集群外部使用，所以不能使用 kubeconfig 的方式来获取 Config
@@ -41,12 +38,17 @@ func main() {
 	if err != nil {
 		klog.Errorf("[ingress] 创建Kubernetes 客户端失败")
 	}
+
+	// http proxy server
+	s := server.NewServer(80)
+
 	// watcher service
-	w := watcher.New(client, func(payload *watcher.Payload) {
-		// s.Update(payload)
-	})
+	w := watcher.New(client, func(payload *watcher.Payload) {s.Update(payload)})
 	// 多协程启动
 	var eg errgroup.Group
+	eg.Go(func() error {
+		return s.Run(context.TODO())
+	})
 	eg.Go(func() error {
 		return w.Run(context.TODO())
 	})

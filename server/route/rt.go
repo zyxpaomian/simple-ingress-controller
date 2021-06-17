@@ -30,12 +30,12 @@ func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
 }
 
 func (rt *RoutingTable) Update(payload *watcher.Payload) {
+	// var 
 	for _, ingressPayload := range payload.Ingresses {
 		rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 		rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)
 	}
 }
-
 
 
 // 根据访问的host 以及 path 获取真实的backend地址

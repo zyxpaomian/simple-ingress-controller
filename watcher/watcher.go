@@ -3,7 +3,6 @@ package watcher
 import (
 	"context"
 	"crypto/tls"
-	//"fmt"
 	"github.com/bep/debounce"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/labels"

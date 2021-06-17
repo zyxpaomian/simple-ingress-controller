@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"runtime"
 	"time"
-	"simple-ingress-controller/server"
+	//"simple-ingress-controller/server"
 	"simple-ingress-controller/watcher"
 
 	"k8s.io/client-go/kubernetes"
@@ -40,15 +40,17 @@ func main() {
 	}
 
 	// http proxy server
-	s := server.NewServer(80)
+	// s := server.NewServer(80)
 
 	// watcher service
-	w := watcher.New(client, func(payload *watcher.Payload) {s.Update(payload)})
+	// w := watcher.New(client, func(payload *watcher.Payload) {s.Update(payload)})
+	w := watcher.New(client, func(payload *watcher.Payload){})
+
 	// 多协程启动
 	var eg errgroup.Group
-	eg.Go(func() error {
+	/*eg.Go(func() error {
 		return s.Run(context.TODO())
-	})
+	})*/
 	eg.Go(func() error {
 		return w.Run(context.TODO())
 	})

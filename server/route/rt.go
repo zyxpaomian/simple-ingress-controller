@@ -37,6 +37,7 @@ func (rt *RoutingTable) Update(payload *watcher.Payload) {
 	for _, ingressPayload := range payload.Ingresses {
 		rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 		rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)
+		klog.Infof("[ingress] add ingress for host: %v info: %v", ingressPayload.Host, rtb)
 	}
 }
 

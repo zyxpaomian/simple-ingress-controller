@@ -43,7 +43,10 @@ func (rt *RoutingTable) Update(payload *watcher.Payload) {
 
 // 根据访问的host 以及 path 获取真实的backend地址
 func (rt *RoutingTable) GetBackend(host, path string) (*url.URL, error) {
+	klog.Infof("[ingress] 当前的backends : %v", rt.Backends)
+	
 	backends := rt.Backends[host]
+	klog.Infof("[ingress] backend : %v", backends)
 	for _, backend := range backends {
 		klog.Infof("[ingress] 主机: %v 有以下upstream: %v", host, backends)
 		if backend.matches(path) {

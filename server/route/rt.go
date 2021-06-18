@@ -19,6 +19,7 @@ type RoutingTable struct {
 
 // 初始化一个新的路由表
 func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
+	klog.Infof("routetable payload is %v", payload)
 	rt := &RoutingTable{
 		//certificatesByHost: make(map[string]map[string]*tls.Certificate),
 		Backends: make(map[string][]routingTableBackend),
@@ -41,7 +42,6 @@ func (rt *RoutingTable) init(payload *watcher.Payload) {
 		klog.Infof("[ingress] add ingress for host: %v info: %v", ingressPayload.Host, rtb)
 	}
 	rt.Lock.Unlock()
-
 }
 
 

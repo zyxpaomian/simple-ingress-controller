@@ -93,10 +93,10 @@ func (w *Watcher) Run(ctx context.Context) error {
 			for _, rule := range ingress.Spec.Rules {
 				
 				if rule.HTTP == nil {
-					klog.Infof("数据为空，不组装")
+					klog.Errorf("[ingress] http rule is nil, do not make the payload")
 					continue
 				}
-				klog.Infof("准备开始组装数据")
+				
 				for _, path := range rule.HTTP.Paths {
 					// 给 ingressPayload 组装数据
 					addBackend(&ingressPayload, rule.Host, path.Path, path.Backend)
@@ -127,6 +127,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 		w.onChange(payload)
 	}
 
+	// 通过debounced 防抖动
 	debounced := debounce.New(time.Second)
 	handler := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {

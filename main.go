@@ -38,12 +38,11 @@ func main() {
 		klog.Errorf("[ingress] 创建Kubernetes 客户端失败")
 	}
 
-	// http proxy server
-	s := server.NewServer(80)
+	// 初始化 proxy server 
+	s := server.NewServer(port, tlsPort)
 
-	// watcher service
+	// 初始化 watcher 进程
 	w := watcher.New(client, func(payload *watcher.Payload) {s.Update(payload)})
-	// w := watcher.New(client, func(payload *watcher.Payload){klog.Infof("current payload is %v", payload)})
 
 	// 多协程启动
 	var eg errgroup.Group

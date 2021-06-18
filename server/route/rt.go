@@ -1,9 +1,10 @@
 package route
 
 import (
-	//	"crypto/tls"
+	"crypto/tls"
 	"net/url"
 	//	"regexp"
+	"strings"
 	"fmt"
 	"sync"
 	"simple-ingress-controller/watcher"
@@ -12,7 +13,7 @@ import (
 
 // 对应ingress rules里的规则，一个host 会匹配多个path
 type RoutingTable struct {
-	// CertByHost *tls.Certificate
+	CertificatesByHost map[string]map[string]*tls.Certificate
 	Backends map[string][]routingTableBackend
 	Lock *sync.RWMutex
 }
@@ -21,7 +22,7 @@ type RoutingTable struct {
 func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
 	klog.Infof("routetable payload is %v", payload)
 	rt := &RoutingTable{
-		//certificatesByHost: make(map[string]map[string]*tls.Certificate),
+		CertificatesByHost: make(map[string]map[string]*tls.Certificate),
 		Backends: make(map[string][]routingTableBackend),
 		Lock: &sync.RWMutex{},
 	}
@@ -32,15 +33,13 @@ func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
 }
 
 func (rt *RoutingTable) init(payload *watcher.Payload) {
-	klog.Infof("routetable payload is new: %v", payload)
 	if payload == nil {
 		return
 	}
 
+	// 加个锁，避免线程安全
 	rt.Lock.Lock()
 	for _, ingressPayload := range payload.Ingresses {
-		klog.Infof("routetable ingressPayload is %v", ingressPayload)
-		klog.Infof("routetable ingressPayload host is %v", ingressPayload.Ingress.Spec.Rules )
 		for _, rule := range ingressPayload.Ingress.Spec.Rules{
 			for _, path := range rule.HTTP.Paths {
 				rtb, _ := newroutingTableBackend(path.Path, path.Backend.ServiceName, path.Backend.ServicePort.IntValue())
@@ -49,20 +48,14 @@ func (rt *RoutingTable) init(payload *watcher.Payload) {
 			}
 
 		}
-		// rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
-		//rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)
-		//klog.Infof("[ingress] add ingress for host: %v info: %v", ingressPayload.Host, rtb)
 	}
 	rt.Lock.Unlock()
 }
 
 
 // 根据访问的host 以及 path 获取真实的backend地址
-func (rt *RoutingTable) GetBackend(host, path string) (*url.URL, error) {
-	klog.Infof("[ingress] 当前的backends : %v", rt.Backends)
-	
+func (rt *RoutingTable) GetBackend(host, path string) (*url.URL, error) {	
 	backends := rt.Backends[host]
-	klog.Infof("[ingress] backend : %v", backends)
 	for _, backend := range backends {
 		klog.Infof("[ingress] 主机: %v 有以下upstream: %v", host, backends)
 		if backend.matches(path) {
@@ -70,4 +63,30 @@ func (rt *RoutingTable) GetBackend(host, path string) (*url.URL, error) {
 		}
 	}
 	return nil, fmt.Errorf("no backend server found")
+}
+
+// 判断证书是否正确
+func (rt *RoutingTable) matches(sni string, certHost string) bool {
+	for strings.HasPrefix(certHost, "*.") {
+		if idx := strings.IndexByte(sni, '.'); idx >= 0 {
+			sni = sni[idx+1:]
+		} else {
+			return false
+		}
+		certHost = certHost[2:]
+	}
+	return sni == certHost
+}
+
+// GetCertificate gets a certificate.
+func (rt *RoutingTable) GetCertificate(sni string) (*tls.Certificate, error) {
+	hostCerts, ok := rt.CertificatesByHost[sni]
+	if ok {
+		for h, cert := range hostCerts {
+			if rt.matches(sni, h) {
+				return cert, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("certificate not found")
 }

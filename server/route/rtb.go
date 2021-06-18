@@ -1,12 +1,11 @@
 package route
 
 import (
-	//	"crypto/tls"
-	"fmt"
+//	"crypto/tls"
 	"net/url"
 	"regexp"
+	"fmt"	
 )
-
 /*
 // 以一个简单的ingress举例,制定结构体
 apiVersion: extensions/v1beta1
@@ -28,8 +27,9 @@ spec:
 // 实际的service和path的正则的匹配关系, 支持正则表达式进行path的匹配
 type routingTableBackend struct {
 	pathRe *regexp.Regexp
-	svcUrl *url.URL
+	svcUrl    *url.URL 
 }
+
 
 // 初始化一个新的rtb对象
 func newroutingTableBackend(path string, serviceName string, servicePort int) (routingTableBackend, error) {

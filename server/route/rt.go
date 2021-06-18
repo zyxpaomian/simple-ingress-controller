@@ -39,6 +39,7 @@ func (rt *RoutingTable) init(payload *watcher.Payload) {
 	rt.Lock.Lock()
 	for _, ingressPayload := range payload.Ingresses {
 		klog.Infof("routetable ingressPayload is %v", ingressPayload)
+		klog.Infof("routetable ingressPayload host is %v", ingressPayload.Ingress.Spec.Rules )
 		rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 		rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)
 		klog.Infof("[ingress] add ingress for host: %v info: %v", ingressPayload.Host, rtb)

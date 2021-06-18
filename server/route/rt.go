@@ -32,11 +32,13 @@ func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
 }
 
 func (rt *RoutingTable) init(payload *watcher.Payload) {
+	klog.Infof("routetable payload is new: %v", payload)
 	if payload == nil {
 		return
 	}
 	rt.Lock.Lock()
 	for _, ingressPayload := range payload.Ingresses {
+		klog.Infof("routetable ingressPayload is %v", ingressPayload)
 		rtb, _ := newroutingTableBackend(ingressPayload.Path, ingressPayload.SvcName, ingressPayload.SvcPort)
 		rt.Backends[ingressPayload.Host] = append(rt.Backends[ingressPayload.Host], rtb)
 		klog.Infof("[ingress] add ingress for host: %v info: %v", ingressPayload.Host, rtb)

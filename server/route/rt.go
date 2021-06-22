@@ -39,13 +39,31 @@ func (rt *RoutingTable) init(payload *watcher.Payload) {
 	// 加个锁，避免线程安全
 	rt.Lock.Lock()
 	for _, ingressPayload := range payload.Ingresses {
+		// 先加载证书信息
+		for _, rule := range ingressPayload.Ingress.Spec.Rules{
+			m, ok := rt.CertificatesByHost[rule.Host]
+			if !ok {
+				m = make(map[string]*tls.Certificate)
+				rt.CertificatesByHost[rule.Host] = m
+			}
+			// 更新路由表证书信息
+			for _, t := range ingressPayload.Ingress.Spec.TLS {
+				for _, h := range t.Hosts {
+					cert, ok := payload.TLSCertificates[t.SecretName]
+					if ok {
+						m[h] = cert
+					}
+				}
+			}
+		}
+
+		// 更新路由信息
 		for _, rule := range ingressPayload.Ingress.Spec.Rules{
 			for _, path := range rule.HTTP.Paths {
 				rtb, _ := newroutingTableBackend(path.Path, path.Backend.ServiceName, path.Backend.ServicePort.IntValue())
 				rt.Backends[rule.Host] = append(rt.Backends[rule.Host], rtb)
 				klog.Infof("[ingress] add ingress for host: %v servicename: %v, service port: %v", rule.Host, path.Backend.ServiceName, path.Backend.ServicePort.IntValue())
 			}
-
 		}
 	}
 	rt.Lock.Unlock()

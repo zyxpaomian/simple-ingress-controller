@@ -20,7 +20,6 @@ type RoutingTable struct {
 
 // 初始化一个新的路由表
 func NewRoutingTable(payload *watcher.Payload) *RoutingTable {
-	klog.Infof("routetable payload is %v", payload)
 	rt := &RoutingTable{
 		CertificatesByHost: make(map[string]map[string]*tls.Certificate),
 		Backends: make(map[string][]routingTableBackend),
@@ -44,7 +43,7 @@ func (rt *RoutingTable) init(payload *watcher.Payload) {
 			for _, path := range rule.HTTP.Paths {
 				rtb, _ := newroutingTableBackend(path.Path, path.Backend.ServiceName, path.Backend.ServicePort.IntValue())
 				rt.Backends[rule.Host] = append(rt.Backends[rule.Host], rtb)
-				klog.Infof("[ingress] add ingress for host: %v info: %v", rule.Host, rtb)
+				klog.Infof("[ingress] add ingress for host: %v servicename: %v, service port: %v", rule.Host, path.Backend.ServiceName, path.Backend.ServicePort.IntValue())
 			}
 
 		}
@@ -80,6 +79,8 @@ func (rt *RoutingTable) matches(sni string, certHost string) bool {
 
 // GetCertificate gets a certificate.
 func (rt *RoutingTable) GetCertificate(sni string) (*tls.Certificate, error) {
+	klog.Infof("sni is %v", sni)
+	klog.Infof("rt cert is %v", rt.CertificatesByHost)
 	hostCerts, ok := rt.CertificatesByHost[sni]
 	if ok {
 		for h, cert := range hostCerts {

@@ -1,7 +1,7 @@
 # Simple-Ingress-Controller
 ___
 
-> 简单的ingress controller，支持http and https。
+> 简单的ingress controller，支持http and https。
 
 ### 部署方式
 * 创建tls

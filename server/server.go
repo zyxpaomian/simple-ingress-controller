@@ -94,4 +94,3 @@ func (s *Server) Update(payload *watcher.Payload) {
 	s.routingTables = route.NewRoutingTable(payload)
 	s.ready.Set()
 }
-

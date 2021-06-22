@@ -50,11 +50,5 @@ func (rtb routingTableBackend) matches(path string) bool {
 	if rtb.pathRe == nil {
 		return true
 	}
-	/*if rtb.pathRe.MatchString(path) {
-		rtb.svcUrl.Path = path
-		return true
-	} else {
-		return false
-	}*/
 	return rtb.pathRe.MatchString(path)
 }

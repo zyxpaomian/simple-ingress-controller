@@ -3,7 +3,6 @@ package route
 import (
 	"crypto/tls"
 	"net/url"
-	//	"regexp"
 	"strings"
 	"fmt"
 	"sync"
@@ -74,7 +73,6 @@ func (rt *RoutingTable) init(payload *watcher.Payload) {
 func (rt *RoutingTable) GetBackend(host, path string) (*url.URL, error) {	
 	backends := rt.Backends[host]
 	for _, backend := range backends {
-		klog.Infof("[ingress] 主机: %v 有以下upstream: %v", host, backends)
 		if backend.matches(path) {
 			return backend.svcUrl, nil
 		}
@@ -97,8 +95,6 @@ func (rt *RoutingTable) matches(sni string, certHost string) bool {
 
 // GetCertificate gets a certificate.
 func (rt *RoutingTable) GetCertificate(sni string) (*tls.Certificate, error) {
-	klog.Infof("sni is %v", sni)
-	klog.Infof("rt cert is %v", rt.CertificatesByHost)
 	hostCerts, ok := rt.CertificatesByHost[sni]
 	if ok {
 		for h, cert := range hostCerts {

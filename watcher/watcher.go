@@ -105,17 +105,14 @@ func (w *Watcher) Run(ctx context.Context) error {
 
 			// 证书处理
 			for _, rec := range ingress.Spec.TLS {
-				klog.Infof("rec is %v", rec)
 				if rec.SecretName != "" {
 					// 获取证书对应的 secret
 					secret, err := secretLister.Secrets(ingress.Namespace).Get(rec.SecretName)
-					klog.Infof("secret name is %v", secret)
 					if err != nil {
 						klog.Errorf("[ingress] 获取secret 失败, %v", err)
 						continue
 					}
 					// 加载证书
-					klog.Infof("secret data is %v", secret.Data)
 					cert, err := tls.X509KeyPair(secret.Data["tls.crt"], secret.Data["tls.key"])
 					if err != nil {
 						klog.Errorf("[ingress] 加载证书失败, %v", err)
@@ -123,7 +120,6 @@ func (w *Watcher) Run(ctx context.Context) error {
 					}
 
 					payload.TLSCertificates[rec.SecretName] = &cert
-					klog.Infof("payload is %v", payload)
 				}
 			}
 		}

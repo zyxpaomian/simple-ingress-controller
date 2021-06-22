@@ -96,7 +96,7 @@ func (w *Watcher) Run(ctx context.Context) error {
 					klog.Errorf("[ingress] http rule is nil, do not make the payload")
 					continue
 				}
-				
+
 				for _, path := range rule.HTTP.Paths {
 					// 给 ingressPayload 组装数据
 					addBackend(&ingressPayload, rule.Host, path.Path, path.Backend)
@@ -105,9 +105,11 @@ func (w *Watcher) Run(ctx context.Context) error {
 
 			// 证书处理
 			for _, rec := range ingress.Spec.TLS {
+				klog.Infof("rec is %v", rec)
 				if rec.SecretName != "" {
 					// 获取证书对应的 secret
 					secret, err := secretLister.Secrets(ingress.Namespace).Get(rec.SecretName)
+					klog.Infof("secret name is %v", secret)
 					if err != nil {
 						klog.Errorf("[ingress] 获取secret 失败, %v", err)
 						continue

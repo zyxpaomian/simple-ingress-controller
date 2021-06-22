@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myweb
+  labels:
+    app: myweb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myweb
+  template:
+    metadata:
+      labels:
+        app: myweb
+    spec:
+      containers:
+        - name: myweb
+          image: registry.cn-shanghai.aliyuncs.com/barney-k8s/myweb:v1.0
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: myweb
+spec:
+  selector:
+    app: myweb
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: httpsweb
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true' #用于支持https
+spec:
+  tls:
+    - hosts:
+      - www.https.com
+      secretName: www.https.com
+  rules:
+    - host: www.https.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: myweb
+              servicePort: 80
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: httpweb
+spec:
+  rules:
+    - host: www.http.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: myweb
+              servicePort: 80
